@@ -102,8 +102,8 @@ const Socket = (io) => {
       const users = getUsersInRoom(roomName);
       if (poll.length > users.length / 2) {
         const { usersList, roomObj } = declareWin(id);
+        io.to(room).emit("roomdata", { ...roomObj, usersList });
       }
-      io.to(room).emit("roomdata", { ...roomObj, usersList });
     });
   });
 };
