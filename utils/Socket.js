@@ -11,12 +11,12 @@ const {
   declareWin,
 } = require("./data/user");
 
-const Socket = (io) => {
+const Socket = io => {
   let poll = [];
-  io.on("connection", (socket) => {
+  io.on("connection", socket => {
     //Utility
     console.log("New Connection");
-    const emitError = (message) => {
+    const emitError = message => {
       console.log(message);
       socket.emit("error", { message });
     };
@@ -29,10 +29,11 @@ const Socket = (io) => {
       if (error1) {
         return emitError(error1);
       }
+      console.log("Room Created " + roomName);
     });
 
     socket.on("joinRoom", (username = "test2", roomName = "test") => {
-      const { error, user, room } = addUser({
+      const { error, user, roomObj } = addUser({
         id: socket.id,
         username,
         room: roomName,
@@ -42,23 +43,23 @@ const Socket = (io) => {
         return emitError(error);
       }
 
-      socket.join(room);
+      socket.join(roomName);
 
       socket.emit(
         "message",
-        generateNotification(`Welcome to Game-Room "${room}"`, "Admin")
+        generateNotification(`Welcome to Game-Room "${roomName}"`, "Admin")
       ); //only sender
 
       socket.broadcast
-        .to(room)
+        .to(roomName)
         .emit(
           "message",
           generateNotification(`${user.username} has joined the Game`, "Admin")
         ); //everyone other that sender
 
-      const usersList = getUsersInRoom(room);
-      io.to(room).emit("roomdata", { name: room, usersList });
-      callback();
+      console.log(`${user.username} has joined the Game`);
+      const usersList = getUsersInRoom(roomName);
+      io.to(roomName).emit("roomData", { ...roomObj, usersList });
     });
 
     socket.on("leaveRoom", () => {
@@ -70,18 +71,21 @@ const Socket = (io) => {
         );
         socket.leave(room);
         const usersList = getUsersInRoom(room);
-        io.to(room).emit("roomdata", { name: room, usersList });
+        console.log(`${user.username} has left ${room}!`);
+        io.to(room).emit("roomData", { name: room, usersList });
       }
     });
 
     socket.on("start", (roomName, cut, numCards) => {
+      console.log("Attempting to start game " + roomName);
       const { roomObj, usersList } = allotCards(
         roomName,
         cut,
         numCards,
         socket.id
       );
-      io.to(room).emit("roomdata", { ...roomObj, usersList });
+      console.log("Game started in room " + roomName);
+      io.to(roomName).emit("roomData", { ...roomObj, usersList });
     });
 
     socket.on("play", (pack = false, stake = 1) => {
@@ -89,10 +93,10 @@ const Socket = (io) => {
         ? packUser(socket.id)
         : stakeUser(socket.id, stake);
 
-      io.to(room).emit("roomdata", { ...roomObj, usersList });
+      io.to(roomObj.name).emit("roomData", { ...roomObj, usersList });
     });
 
-    socket.on("askWin", (roomName) => {
+    socket.on("askWin", roomName => {
       socket.broadcast.to(roomName).emit("askingWin", getUser(socket.id));
       poll = [];
     });
@@ -102,7 +106,7 @@ const Socket = (io) => {
       const users = getUsersInRoom(roomName);
       if (poll.length > users.length / 2) {
         const { usersList, roomObj } = declareWin(id);
-        io.to(room).emit("roomdata", { ...roomObj, usersList });
+        io.to(roomName).emit("roomData", { ...roomObj, usersList });
       }
     });
   });

@@ -23,7 +23,7 @@ const createRoom = (room, table) => {
     };
   }
   //check if room exists
-  const temp = room.find((i) => i.name === room);
+  const temp = rooms.find(i => i.name === room);
 
   if (temp) {
     return {
@@ -37,11 +37,13 @@ const createRoom = (room, table) => {
     table,
     numCards: 3,
     currentPlayer: 0,
-    started: false,
+    isStarted: false,
     pot: 0,
+    maxStake: 0,
     cardsRemaining: [],
   });
   users[room] = [];
+  return {};
 };
 
 const addUser = ({ id, username, room }) => {
@@ -57,7 +59,7 @@ const addUser = ({ id, username, room }) => {
   }
 
   //check if room exists
-  const temp = room.find((i) => i.name === room);
+  const temp = rooms.find(i => i.name === room);
 
   if (!temp) {
     return {
@@ -65,7 +67,7 @@ const addUser = ({ id, username, room }) => {
     };
   }
   // Check for existing user
-  const existing = users[room].find((u) => {
+  const existing = users[room].find(u => {
     u.username === username;
   });
 
@@ -81,14 +83,15 @@ const addUser = ({ id, username, room }) => {
     id,
     username,
     isPacked: false,
+    hasSeen: false,
     balance: temp.table,
     cardsInHand: [],
   };
   users[room].push(user);
-  if (user) return { user, room };
+  if (user) return { user, roomObj: temp };
 };
 
-const removeUser = (id) => {
+const removeUser = id => {
   const { room, user } = findUser(id);
 
   let removedUser = users[room].splice(user, 1)[0];
@@ -96,7 +99,7 @@ const removeUser = (id) => {
   //check if all users are removed in that case delete room from array of rooms
   if (!users[room].length)
     rooms.splice(
-      rooms.findIndex((i) => i.name === room),
+      rooms.findIndex(i => i.name === room),
       1
     );
 
@@ -105,21 +108,21 @@ const removeUser = (id) => {
   }
 };
 
-const getUser = (id) => {
+const getUser = id => {
   const { room, user } = findUser(id);
 
   return users[room][user];
 };
 
-const getUsersInRoom = (room) => {
+const getUsersInRoom = room => {
   room = room.trim().toLowerCase();
   return users[room] || [];
 };
 
-const findRoom = (room) => {
+const findRoom = room => {
   room = room.trim().toLowerCase();
   let index = -1;
-  const temp = room.find((el, ind) => {
+  const temp = rooms.find((el, ind) => {
     if (el.name === room) {
       index = ind;
       return true;
@@ -131,26 +134,35 @@ const findRoom = (room) => {
 const allotCards = (room, cut, numCards, id) => {
   let { index } = findRoom(room);
   let usersList = getUsersInRoom(room);
-  const initiatorUserIndex = users[room].findIndex((i) => i.id === id);
+  console.log(usersList);
+  usersList = usersList.filter(i => i.balance > 0);
+  const initiatorUserIndex = users[room].findIndex(i => i.id === id);
   rooms[index]["currentPlayer"] = (initiatorUserIndex + 1) % usersList.length; //The next player to the initiator will start playing
   rooms[index]["numCards"] = numCards;
+  console.log(usersList.length);
   let allotments = dealCards(usersList.length, numCards, cut);
   rooms[index]["cardsRemaining"] = allotments.splice(
-    usersList.length - 1,
+    allotments.length - 1,
     1
   )[0];
-
+  console.log(allotments);
   for (let i in allotments) {
     users[room][i]["cardsInHand"] = allotments[i];
     users[room][i]["isPacked"] = false;
+    users[room][i]["balance"] -= 1; //cutting table
   }
+  rooms[index]["pot"] += usersList.length; //Adding table to game Pot
+  rooms[index]["isStarted"] = true;
   return { roomObj: rooms[index], usersList: getUsersInRoom(room) };
 };
 
-const packUser = (id) => {
+const packUser = id => {
   const { user, room } = findUser(id);
+  const { index } = findRoom(room);
+
   users[room][user].isPacked = true;
-  return { roomObj: room, usersList: users[room] };
+  rooms[index]["currentPlayer"] = (user + 1) % users[room].length; //Shift to next player
+  return { roomObj: rooms[index], usersList: users[room] };
 };
 
 const stakeUser = (id, amount) => {
@@ -158,14 +170,18 @@ const stakeUser = (id, amount) => {
   let { index } = findRoom(room);
   users[room][user].balance -= amount;
   rooms[index].pot += amount;
+  let temp = (user + 1) % users[room].length;
+  while (users[room][temp].isPacked) temp = (temp + 1) % users[room].length;
+  rooms[index]["currentPlayer"] = temp; //Shift to next player
   return { roomObj: rooms[index], usersList: users[room] };
 };
 
-const declareWin = (id) => {
+const declareWin = id => {
   const { user, room } = findUser(id);
   let { index, roomObj } = findRoom(room);
   users[room][user].balance += roomObj.pot;
   rooms[index].pot = 0;
+  rooms[index].isStarted = false;
   return { roomObj: rooms[index], usersList: users[room] };
 };
 
