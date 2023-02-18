@@ -12,12 +12,12 @@ const {
   seeCards,
 } = require("./data/user");
 
-const Socket = (io) => {
+const Socket = io => {
   let poll = [];
-  io.on("connection", (socket) => {
+  io.on("connection", socket => {
     //Utility
     console.log("New Connection");
-    const emitError = (message) => {
+    const emitError = message => {
       console.log(message);
       socket.emit("error", { message });
     };
@@ -28,16 +28,16 @@ const Socket = (io) => {
     };
 
     const leaveGame = () => {
-      const { user, room } = removeUser(socket.id);
-      if (user) {
-        emitMessage(
-          room,
-          generateNotification(`${user.username} has left ${room}!`, "Admin")
-        );
-        const usersList = getUsersInRoom(room);
-        console.log(`${user.username} has left ${room}!`);
-        io.to(room).emit("roomData", { name: room, usersList });
-      }
+      const { user, room, error } = removeUser(socket.id);
+      if (error) return;
+
+      emitMessage(
+        room,
+        generateNotification(`${user.username} has left ${room}!`, "Admin")
+      );
+      const usersList = getUsersInRoom(room);
+      console.log(`${user.username} has left ${room}!`);
+      io.to(room).emit("roomData", { name: room, usersList });
 
       return room;
     };
@@ -88,16 +88,22 @@ const Socket = (io) => {
     });
 
     socket.on("disconnect", leaveGame);
-    socket.on("leaveRoom", () => socket.leave(leaveGame()));
+    socket.on("leaveRoom", () => {
+      socket.leave(leaveGame());
+      console.log("User Left");
+    });
 
     socket.on("start", (roomName, cut, numCards) => {
       console.log("Attempting to start game " + roomName);
-      const { roomObj, usersList } = allotCards(
+      const { roomObj, usersList, error } = allotCards(
         roomName,
         cut,
         numCards,
         socket.id
       );
+      if (error) {
+        return emitError(error);
+      }
       emitMessage(
         roomName,
         generateNotification("Game started in room " + roomName, "Admin")
@@ -116,6 +122,8 @@ const Socket = (io) => {
     });
 
     socket.on("play", (pack = false, stake = 1) => {
+      if (stake < 1)
+        return emitError("Stake amount needs to be greater than 0");
       const { roomObj, usersList, error, user } = pack
         ? packUser(socket.id)
         : stakeUser(socket.id, stake);
@@ -132,7 +140,7 @@ const Socket = (io) => {
       io.to(roomObj.name).emit("roomData", { ...roomObj, usersList });
     });
 
-    socket.on("askWin", (roomName) => {
+    socket.on("askWin", roomName => {
       socket.broadcast.to(roomName).emit("askingWin", getUser(socket.id)); //ask everyone other than the user if he has won
       poll = [];
     });

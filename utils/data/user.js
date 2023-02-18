@@ -23,7 +23,7 @@ const createRoom = (room, table) => {
     };
   }
   //check if room exists
-  const temp = rooms.find((i) => i.name === room);
+  const temp = rooms.find(i => i.name === room);
 
   if (temp) {
     return {
@@ -59,7 +59,7 @@ const addUser = ({ id, username, room }) => {
   }
 
   //check if room exists
-  const temp = rooms.find((i) => i.name === room);
+  const temp = rooms.find(i => i.name === room);
 
   if (!temp) {
     return {
@@ -67,7 +67,7 @@ const addUser = ({ id, username, room }) => {
     };
   }
   // Check for existing user
-  const existing = users[room].find((u) => {
+  const existing = users[room].find(u => {
     u.username === username;
   });
 
@@ -91,15 +91,18 @@ const addUser = ({ id, username, room }) => {
   if (user) return { user, roomObj: temp };
 };
 
-const removeUser = (id) => {
+const removeUser = id => {
   const { room, user } = findUser(id);
-
+  if (user < 0)
+    return {
+      error: "No such userfound",
+    };
   let removedUser = users[room].splice(user, 1)[0];
 
   //check if all users are removed in that case delete room from array of rooms
   if (!users[room].length)
     rooms.splice(
-      rooms.findIndex((i) => i.name === room),
+      rooms.findIndex(i => i.name === room),
       1
     );
 
@@ -108,18 +111,18 @@ const removeUser = (id) => {
   }
 };
 
-const getUser = (id) => {
+const getUser = id => {
   const { room, user } = findUser(id);
 
   return users[room][user];
 };
 
-const getUsersInRoom = (room) => {
+const getUsersInRoom = room => {
   room = room.trim().toLowerCase();
   return users[room] || [];
 };
 
-const findRoom = (room) => {
+const findRoom = room => {
   room = room.trim().toLowerCase();
   let index = -1;
   const temp = rooms.find((el, ind) => {
@@ -134,18 +137,22 @@ const findRoom = (room) => {
 const allotCards = (room, cut, numCards, id) => {
   let { index } = findRoom(room);
   let usersList = getUsersInRoom(room);
-  console.log(usersList);
-  usersList = usersList.filter((i) => i.balance > 0);
-  const initiatorUserIndex = users[room].findIndex((i) => i.id === id);
+  if (!rooms[index])
+    return {
+      error: "No such Room Found",
+    };
+  //console.log(usersList);
+  usersList = usersList.filter(i => i.balance > 0);
+  const initiatorUserIndex = users[room].findIndex(i => i.id === id);
   rooms[index]["currentPlayer"] = (initiatorUserIndex + 1) % usersList.length; //The next player to the initiator will start playing
   rooms[index]["numCards"] = numCards;
-  console.log(usersList.length);
+  //console.log(usersList.length);
   let allotments = dealCards(usersList.length, numCards, cut);
   rooms[index]["cardsRemaining"] = allotments.splice(
     allotments.length - 1,
     1
   )[0];
-  console.log(allotments);
+  //console.log(allotments);
   for (let i in allotments) {
     users[room][i]["cardsInHand"] = allotments[i];
     users[room][i]["isPacked"] = false;
@@ -156,7 +163,7 @@ const allotCards = (room, cut, numCards, id) => {
   return { roomObj: rooms[index], usersList: getUsersInRoom(room) };
 };
 
-const packUser = (id) => {
+const packUser = id => {
   const { user, room } = findUser(id);
   const { index } = findRoom(room);
 
@@ -172,6 +179,8 @@ const packUser = (id) => {
 const stakeUser = (id, amount) => {
   const { user, room } = findUser(id);
   let { index } = findRoom(room);
+  if (users[room][user].balance < amount)
+    return { error: "Insufficient Balance" };
   if (rooms[index].maxStake / (users[room][user].isBlind ? 2 : 1) > amount)
     return {
       error: "You have staked lower than the max stake",
@@ -179,8 +188,10 @@ const stakeUser = (id, amount) => {
   rooms[index].maxStake = (users[room][user].isBlind ? 2 : 1) * amount; //assign max stake to the current stake amount
   users[room][user].balance -= amount;
   rooms[index].pot += amount;
+  console.log(user);
   let temp = (user + 1) % users[room].length;
   while (users[room][temp].isPacked) temp = (temp + 1) % users[room].length; //Next is an unpacked player
+  console.log(temp);
   rooms[index]["currentPlayer"] = temp; //Shift to next player
   return {
     roomObj: rooms[index],
@@ -189,7 +200,7 @@ const stakeUser = (id, amount) => {
   };
 };
 
-const seeCards = (id) => {
+const seeCards = id => {
   const { user, room } = findUser(id);
   users[room][user].isBlind = false;
 
@@ -200,7 +211,7 @@ const seeCards = (id) => {
   };
 };
 
-const declareWin = (id) => {
+const declareWin = id => {
   const { user, room } = findUser(id);
   let { index, roomObj } = findRoom(room);
   if (rooms[index].pot === 0)

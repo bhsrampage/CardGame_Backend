@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const socketio = require("socket.io");
 const cors = require("cors");
+const { findRoom } = require("./utils/data/user");
 
 const Socket = require("./utils/Socket");
 
@@ -27,6 +28,16 @@ const PORT = process.env.PORT || 5000;
 
 app.get("/", (req, res) => {
   res.status(200).send("<h1>Teen Patti Backend is Running </h1>");
+});
+
+app.get("/room/:roomName", (req, res) => {
+  try {
+    let { roomObj } = findRoom(req.params.roomName);
+    if (!roomObj) res.status(404).json("No such room found");
+    res.status(200).json(roomObj);
+  } catch (error) {
+    res.status(400).json(error);
+  }
 });
 
 //Starting the server
