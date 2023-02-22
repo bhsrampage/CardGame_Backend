@@ -233,12 +233,12 @@ const gameShow = (roomName, id) => {
 };
 
 const declareWin = (id, winnerId) => {
-  const { user: initiatorUser, room: initiatorRoom } = findUser(id);
+  // const { user: initiatorUser, room: initiatorRoom } = findUser(id);
   const { user: winnerUser, room: winnerRoom } = findUser(winnerId);
-  if (initiatorRoom !== winnerRoom)
-    return {
-      error: "Initiator and Winner are not in the same room",
-    };
+  // if (initiatorRoom !== winnerRoom)
+  //   return {
+  //     error: "Initiator and Winner are not in the same room",
+  //   };
   let { index, roomObj } = findRoom(winnerRoom);
   if (rooms[index].pot === 0)
     return {
