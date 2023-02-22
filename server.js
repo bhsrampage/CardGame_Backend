@@ -24,7 +24,7 @@ app.use(function (req, res, next) {
 
 const server = http.createServer(app);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 app.get("/", (req, res) => {
   res.status(200).send("<h1>Teen Patti Backend is Running </h1>");
@@ -47,4 +47,8 @@ server.listen(PORT, () => {
 
 const io = socketio(server);
 
-Socket(io);
+try {
+  Socket(io);
+} catch (error) {
+  console.log(error);
+}

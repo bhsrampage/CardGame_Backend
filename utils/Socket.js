@@ -13,12 +13,12 @@ const {
   gameShow,
 } = require("./data/user");
 
-const Socket = io => {
+const Socket = (io) => {
   let poll = [];
-  io.on("connection", socket => {
+  io.on("connection", (socket) => {
     //Utility
     console.log("New Connection");
-    const emitError = message => {
+    const emitError = (message) => {
       console.log(message);
       socket.emit("error", { message });
     };
@@ -141,12 +141,16 @@ const Socket = io => {
       io.to(roomObj.name).emit("roomData", { ...roomObj, usersList });
     });
 
-    socket.on("show", roomName => {
-      const { roomObj, usersList, error } = gameShow(roomName, socket.id);
+    socket.on("show", (roomName) => {
+      const { roomObj, usersList, user, error } = gameShow(roomName, socket.id);
       console.log("Show called by ", socket.id);
       if (error) {
         return emitError(error);
       }
+      emitMessage(
+        roomObj.name,
+        generateNotification(user.username + `has called SHOW !!`, "Admin")
+      );
       io.to(roomObj.name).emit("roomData", { ...roomObj, usersList });
     });
 
