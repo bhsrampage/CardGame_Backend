@@ -7,7 +7,7 @@ const rooms = []; //list of rooms active
 function findUser(id) {
   for (let room in users) {
     for (let user in users[room] || []) {
-      if (users[room][user].id === id) return { room, user };
+      if (users[room][user].id === id) return { room, user: parseInt(user) };
     }
   }
   return { room: -1, user: -1 };
@@ -37,6 +37,8 @@ const createRoom = (room, table) => {
     table,
     numCards: 3,
     currentPlayer: 0,
+    gameShow: false,
+    initiator: null,
     isStarted: false,
     pot: 0,
     maxStake: 0,
@@ -146,6 +148,7 @@ const allotCards = (room, cut, numCards, id) => {
   const initiatorUserIndex = users[room].findIndex(i => i.id === id);
   rooms[index]["currentPlayer"] = (initiatorUserIndex + 1) % usersList.length; //The next player to the initiator will start playing
   rooms[index]["numCards"] = numCards;
+  rooms[index]["initiator"] = id;
   //console.log(usersList.length);
   let allotments = dealCards(usersList.length, numCards, cut);
   rooms[index]["cardsRemaining"] = allotments.splice(
@@ -188,10 +191,11 @@ const stakeUser = (id, amount) => {
   rooms[index].maxStake = (users[room][user].isBlind ? 2 : 1) * amount; //assign max stake to the current stake amount
   users[room][user].balance -= amount;
   rooms[index].pot += amount;
-  console.log(user);
+  //console.log(user);
   let temp = (user + 1) % users[room].length;
+  //console.log(user + 1, users[room].length, temp);
   while (users[room][temp].isPacked) temp = (temp + 1) % users[room].length; //Next is an unpacked player
-  console.log(temp);
+  //console.log(temp);
   rooms[index]["currentPlayer"] = temp; //Shift to next player
   return {
     roomObj: rooms[index],
@@ -211,20 +215,48 @@ const seeCards = id => {
   };
 };
 
-const declareWin = id => {
+const gameShow = (roomName, id) => {
+  let { index } = findRoom(roomName);
   const { user, room } = findUser(id);
-  let { index, roomObj } = findRoom(room);
+  let amount = rooms[index].maxStake / (users[room][user].isBlind ? 2 : 1);
+  if (amount > users[room][user].balance) {
+    return { error: "Insufficient balance to SHOW please PACK your cards !!!" };
+  }
+  users[room][user].balance -= amount;
+  rooms[index]["gameShow"] = true;
+
+  return { roomObj: rooms[index], usersList: users[room] };
+};
+
+const declareWin = (id, winnerId) => {
+  const { user: initiatorUser, room: initiatorRoom } = findUser(id);
+  const { user: winnerUser, room: winnerRoom } = findUser(winnerId);
+  if (initiatorRoom !== winnerRoom)
+    return {
+      error: "Initiator and Winner are not in the same room",
+    };
+  let { index, roomObj } = findRoom(winnerRoom);
   if (rooms[index].pot === 0)
     return {
-      error: user.username + " has already been declared winner",
+      error:
+        users[winnerRoom][winnerUser].username +
+        " has already been declared winner",
     };
-  users[room][user].balance += roomObj.pot;
+
+  if (rooms[index].initiator !== id)
+    return {
+      error: "Only game Initiator can declare winner !!",
+    };
+  users[winnerRoom][winnerUser].balance += roomObj.pot;
   rooms[index].pot = 0;
   rooms[index].isStarted = false;
+  rooms[index].gameShow = false;
+  rooms[index].initiator = null;
+
   return {
     roomObj: rooms[index],
-    usersList: users[room],
-    user: users[room][user],
+    usersList: users[winnerRoom],
+    user: users[winnerRoom][winnerUser],
   };
 };
 
@@ -240,4 +272,5 @@ module.exports = {
   stakeUser,
   declareWin,
   seeCards,
+  gameShow,
 };

@@ -10,6 +10,7 @@ const {
   getUser,
   declareWin,
   seeCards,
+  gameShow,
 } = require("./data/user");
 
 const Socket = io => {
@@ -140,27 +141,23 @@ const Socket = io => {
       io.to(roomObj.name).emit("roomData", { ...roomObj, usersList });
     });
 
-    socket.on("askWin", roomName => {
-      socket.broadcast.to(roomName).emit("askingWin", getUser(socket.id)); //ask everyone other than the user if he has won
-      poll = [];
+    socket.on("show", roomName => {
+      const { roomObj, usersList, error } = gameShow(roomName, socket.id);
+      console.log("Show called by ", socket.id);
+      if (error) {
+        return emitError(error);
+      }
+      io.to(roomObj.name).emit("roomData", { ...roomObj, usersList });
     });
 
     socket.on("confirmWin", (id, roomName) => {
-      poll.push(socket.id);
-      const users = getUsersInRoom(roomName);
-      if (poll.length > users.length / 2) {
-        const { usersList, roomObj, error, user } = declareWin(id);
-        if (error) return emitError(error);
-        io.to(roomName).emit("roomData", { ...roomObj, usersList });
-        emitMessage(
-          roomObj.name,
-          generateNotification(
-            `${user.username} has won this round !!`,
-            "Admin"
-          )
-        );
-      }
-      io.to(roomName).emit("pollResults", poll);
+      const { usersList, roomObj, error, user } = declareWin(socket.id, id);
+      if (error) return emitError(error);
+      io.to(roomName).emit("roomData", { ...roomObj, usersList });
+      emitMessage(
+        roomObj.name,
+        generateNotification(`${user.username} has won this round !!`, "Admin")
+      );
     });
   });
 };
