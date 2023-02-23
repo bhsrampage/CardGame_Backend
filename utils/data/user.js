@@ -172,7 +172,7 @@ const allotCards = (room, cut, numCards, id) => {
     if (u.balance > 0) {
       u.cardsInHand = allotments[i];
       u.isPacked = false;
-      u.isBlind = false;
+      u.isBlind = true;
       u.balance -= 1;
       i += 1;
       return u;
