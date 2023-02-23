@@ -237,6 +237,9 @@ const stakeUser = (id, amount) => {
 
 const seeCards = (id) => {
   const { user, room } = findUser(id);
+  if (user < 0) {
+    return;
+  }
   users[room][user].isBlind = false;
 
   return {
