@@ -128,7 +128,7 @@ const findRoom = (room) => {
     return {
       error: "Room not specified",
     };
-  room = room?.trim().toLowerCase();
+  // room = room?.trim().toLowerCase();
   let index = -1;
   const temp = rooms.find((el, ind) => {
     if (el.name === room) {

@@ -3,9 +3,13 @@ const http = require("http");
 const socketio = require("socket.io");
 const cors = require("cors");
 const { findRoom } = require("./utils/data/user");
+const { instrument } = require("@socket.io/admin-ui");
+const dotenv = require("dotenv");
+const bcrypt = require("bcryptjs");
 
 const Socket = require("./utils/Socket");
 
+dotenv.config({ path: "./.env" });
 const app = express();
 
 app.use(cors()); //enable cross origin requests
@@ -45,8 +49,17 @@ server.listen(PORT, () => {
   console.log(`Server active on port ${PORT}`);
 });
 
-const io = socketio(server);
+const password = bcrypt.hashSync(process.env.SOCKETIO_ADMIN, 10);
 
+const io = socketio(server);
+instrument(io, {
+  auth: {
+    type: "basic",
+    username: "burhan",
+    password,
+  },
+  mode: process.env.NODE_ENV,
+});
 try {
   Socket(io);
 } catch (error) {
