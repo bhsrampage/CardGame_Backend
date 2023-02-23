@@ -13,12 +13,12 @@ const {
   gameShow,
 } = require("./data/user");
 
-const Socket = (io) => {
+const Socket = io => {
   let poll = [];
-  io.on("connection", (socket) => {
+  io.on("connection", socket => {
     //Utility
     console.log("New Connection");
-    const emitError = (message) => {
+    const emitError = message => {
       console.log(message);
       socket.emit("error", { message });
     };
@@ -125,7 +125,7 @@ const Socket = (io) => {
     socket.on("play", (pack = false, stake = 1) => {
       if (stake < 1)
         return emitError("Stake amount needs to be greater than 0");
-      const { roomObj, usersList, error, user } = pack
+      const { roomObj, usersList, error, user, won } = pack
         ? packUser(socket.id)
         : stakeUser(socket.id, stake);
       if (error) {
@@ -134,14 +134,19 @@ const Socket = (io) => {
       emitMessage(
         roomObj.name,
         generateNotification(
-          user.username + pack ? `has staked ${stake}` : " has packed !!",
+          user.username +
+            (pack
+              ? won
+                ? " has one the game"
+                : " has packed !!"
+              : ` has staked ${stake}`),
           "Admin"
         )
       );
       io.to(roomObj.name).emit("roomData", { ...roomObj, usersList });
     });
 
-    socket.on("show", (roomName) => {
+    socket.on("show", roomName => {
       const { roomObj, usersList, user, error } = gameShow(roomName, socket.id);
       console.log("Show called by ", socket.id);
       if (error) {
