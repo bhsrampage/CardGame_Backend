@@ -1,9 +1,11 @@
 const express = require("express");
 const http = require("http");
 const socketio = require("socket.io");
+const customParser = require("socket.io-msgpack-parser");
+const { instrument } = require("@socket.io/admin-ui");
+
 const cors = require("cors");
 const { findRoom } = require("./utils/data/user");
-const { instrument } = require("@socket.io/admin-ui");
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs");
 
@@ -53,7 +55,9 @@ const password = bcrypt.hashSync(process.env.SOCKETIO_ADMIN, 10);
 
 const io = socketio(server, {
   pingInterval: 10000, // how often to ping/pong.
-  pingTimeout: 40000, // time after which the connection is considered timed-out.
+  pingTimeout: 60000, // time after which the connection is considered timed-out.
+  parser: customParser,
+  transports: ["websocket", "polling"],
 });
 instrument(io, {
   auth: {

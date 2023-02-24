@@ -11,14 +11,15 @@ const {
   declareWin,
   seeCards,
   gameShow,
+  getRoomStatus,
 } = require("./data/user");
 
-const Socket = io => {
+const Socket = (io) => {
   let poll = [];
-  io.on("connection", socket => {
+  io.on("connection", (socket) => {
     //Utility
     console.log("New Connection");
-    const emitError = message => {
+    const emitError = (message) => {
       console.log(message);
       socket.emit("error", { message });
     };
@@ -28,11 +29,12 @@ const Socket = io => {
       io.to(roomName).emit("message", obj);
     };
 
-    const leaveGame = reason => {
+    const leaveGame = (reason) => {
       if (reason) {
-        console.log(reason);
+        console.log(socket.id + " " + reason);
         if (reason === "transport close") {
-          return;
+          const obj = getRoomStatus(socket.id);
+          if (obj.isStarted) return;
         }
       }
 
@@ -41,7 +43,10 @@ const Socket = io => {
 
       emitMessage(
         room,
-        generateNotification(`${user.username} has left ${room}!`, "Admin")
+        generateNotification(
+          `${user.username} (${socket.id}) has left ${room}!`,
+          "Admin"
+        )
       );
       const usersList = getUsersInRoom(room);
       console.log(`${user.username} has left ${room}!`);
@@ -146,14 +151,14 @@ const Socket = io => {
               ? won
                 ? " has one the game"
                 : " has packed !!"
-              : ` has staked ${stake}`),
+              : ` has staked ${stake} ${user.isBlind && "(Blind)"}`),
           "Admin"
         )
       );
       io.to(roomObj.name).emit("roomData", { ...roomObj, usersList });
     });
 
-    socket.on("show", roomName => {
+    socket.on("show", (roomName) => {
       const { roomObj, usersList, user, error } = gameShow(roomName, socket.id);
       console.log("Show called by ", socket.id);
       if (error) {

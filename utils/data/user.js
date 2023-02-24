@@ -139,6 +139,12 @@ const findRoom = (room) => {
   return { roomObj: temp, index };
 };
 
+const getRoomStatus = (id) => {
+  const { user, room } = findUser(id);
+  const { roomObj } = findRoom(room);
+  return roomObj;
+};
+
 const allotCards = (room, cut, numCards, id) => {
   let { index, error } = findRoom(room);
 
@@ -313,4 +319,5 @@ module.exports = {
   declareWin,
   seeCards,
   gameShow,
+  getRoomStatus,
 };
