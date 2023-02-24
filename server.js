@@ -51,7 +51,10 @@ server.listen(PORT, () => {
 
 const password = bcrypt.hashSync(process.env.SOCKETIO_ADMIN, 10);
 
-const io = socketio(server);
+const io = socketio(server, {
+  pingInterval: 10000, // how often to ping/pong.
+  pingTimeout: 40000, // time after which the connection is considered timed-out.
+});
 instrument(io, {
   auth: {
     type: "basic",
