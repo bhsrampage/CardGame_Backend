@@ -13,12 +13,12 @@ const {
   gameShow,
 } = require("./data/user");
 
-const Socket = (io) => {
+const Socket = io => {
   let poll = [];
-  io.on("connection", (socket) => {
+  io.on("connection", socket => {
     //Utility
     console.log("New Connection");
-    const emitError = (message) => {
+    const emitError = message => {
       console.log(message);
       socket.emit("error", { message });
     };
@@ -28,10 +28,14 @@ const Socket = (io) => {
       io.to(roomName).emit("message", obj);
     };
 
-    const leaveGame = (reason) => {
+    const leaveGame = reason => {
       if (reason) {
         console.log(reason);
+        if (reason === "transport close") {
+          return;
+        }
       }
+
       const { user, room, error } = removeUser(socket.id);
       if (error) return;
 
@@ -149,7 +153,7 @@ const Socket = (io) => {
       io.to(roomObj.name).emit("roomData", { ...roomObj, usersList });
     });
 
-    socket.on("show", (roomName) => {
+    socket.on("show", roomName => {
       const { roomObj, usersList, user, error } = gameShow(roomName, socket.id);
       console.log("Show called by ", socket.id);
       if (error) {
