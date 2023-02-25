@@ -58,6 +58,12 @@ const io = socketio(server, {
   pingTimeout: 60000, // time after which the connection is considered timed-out.
   parser: customParser,
   transports: ["websocket", "polling"],
+  connectionStateRecovery: {
+    // the backup duration of the sessions and the packets
+    maxDisconnectionDuration: 2 * 60 * 1000,
+    // whether to skip middlewares upon successful recovery
+    skipMiddlewares: true,
+  },
 });
 instrument(io, {
   auth: {

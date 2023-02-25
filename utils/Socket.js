@@ -17,8 +17,18 @@ const {
 const Socket = (io) => {
   let poll = [];
   io.on("connection", (socket) => {
+    if (socket.recovered) {
+      // recovery was successful: socket.id, socket.rooms and socket.data were restored
+      console.log("Recovered connection");
+      const { roomObj, error } = getRoomStatus(socket.id);
+      if (error) return emitError(error + " Could not recover data properly");
+      io.to(roomObj.name).emit("roomData", roomObj);
+    } else {
+      // new or unrecoverable session
+      console.log("New Connection");
+    }
     //Utility
-    console.log("New Connection");
+
     const emitError = (message) => {
       console.log(message);
       socket.emit("error", { message });
