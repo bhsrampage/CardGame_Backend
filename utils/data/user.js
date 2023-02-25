@@ -142,7 +142,11 @@ const findRoom = (room) => {
 const getRoomStatus = (id) => {
   const { user, room } = findUser(id);
   const { roomObj } = findRoom(room);
-  return roomObj;
+  if (!roomObj)
+    return {
+      error: "Room not found",
+    };
+  return { roomObj };
 };
 
 const allotCards = (room, cut, numCards, id) => {

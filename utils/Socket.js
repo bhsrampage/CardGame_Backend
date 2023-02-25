@@ -33,8 +33,9 @@ const Socket = (io) => {
       if (reason) {
         console.log(socket.id + " " + reason);
         if (reason === "transport close") {
-          const obj = getRoomStatus(socket.id);
-          if (obj.isStarted) return;
+          const { roomObj, error } = getRoomStatus(socket.id);
+          if (error) return console.log(error);
+          if (roomObj.isStarted) return;
         }
       }
 
@@ -121,7 +122,6 @@ const Socket = (io) => {
         roomName,
         generateNotification("Game started in room " + roomName, "Admin")
       );
-      console.log("Game started in room " + roomName);
       io.to(roomName).emit("roomData", { ...roomObj, usersList });
     });
 
@@ -149,9 +149,9 @@ const Socket = (io) => {
           user.username +
             (pack
               ? won
-                ? " has one the game"
+                ? " has won the game"
                 : " has packed !!"
-              : ` has staked ${stake} ${user.isBlind && "(Blind)"}`),
+              : ` has staked ${stake} ${user.isBlind ? "(Blind)" : ""}`),
           "Admin"
         )
       );
@@ -166,7 +166,7 @@ const Socket = (io) => {
       }
       emitMessage(
         roomObj.name,
-        generateNotification(user.username + `has called SHOW !!`, "Admin")
+        generateNotification(`${user.username} has called SHOW !!`, "Admin")
       );
       io.to(roomObj.name).emit("roomData", { ...roomObj, usersList });
     });
