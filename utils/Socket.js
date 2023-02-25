@@ -44,10 +44,8 @@ const Socket = (io) => {
       if (reason) {
         console.log(socket.id + " " + reason);
         if (reason === "transport close") {
-          console.log("Transport was closed");
-          const { roomObj, error } = getRoomStatus(socket.id);
-          if (error) return console.log(error);
-          if (roomObj.isStarted) return;
+          console.log("Transport was closed. Trying to reconnect");
+          return;
         }
       }
 
