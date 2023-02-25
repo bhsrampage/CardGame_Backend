@@ -16,7 +16,13 @@ const {
 
 const Socket = (io) => {
   let poll = [];
+
   io.on("connection", (socket) => {
+    const emitError = (message) => {
+      console.log(message);
+      socket.emit("error", { message });
+    };
+
     if (socket.recovered) {
       // recovery was successful: socket.id, socket.rooms and socket.data were restored
       console.log("Recovered connection");
@@ -29,11 +35,6 @@ const Socket = (io) => {
     }
     //Utility
 
-    const emitError = (message) => {
-      console.log(message);
-      socket.emit("error", { message });
-    };
-
     const emitMessage = (roomName, obj) => {
       console.log(obj.text);
       io.to(roomName).emit("message", obj);
@@ -43,6 +44,7 @@ const Socket = (io) => {
       if (reason) {
         console.log(socket.id + " " + reason);
         if (reason === "transport close") {
+          console.log("Transport was closed");
           const { roomObj, error } = getRoomStatus(socket.id);
           if (error) return console.log(error);
           if (roomObj.isStarted) return;
