@@ -267,6 +267,7 @@ const gameShow = (roomName, id) => {
     return { error: "Insufficient balance to SHOW please PACK your cards !!!" };
   }
   users[room][user].balance -= amount;
+  rooms[index].pot += amount;
   rooms[index]["gameShow"] = true;
 
   return {
