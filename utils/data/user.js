@@ -197,6 +197,7 @@ const allotCards = (room, cut, numCards, id) => {
   // }
   rooms[index]["pot"] += usersList.length; //Adding table to game Pot
   rooms[index]["isStarted"] = true;
+  rooms[index]["maxStake"] = 1;
   return { roomObj: rooms[index], usersList: getUsersInRoom(room) };
 };
 
